@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GOVCO Hub — Past Questions</title>
+  <link rel="stylesheet" href="css/past.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-top">
+      <button id="hamburger" class="icon-btn">☰</button>
+      <div class="title">Past Questions</div>
+      <div class="account-wrap">
+        <button id="accountBtn" class="icon-btn">Account</button> 
+      </div>
+    </div>
+    <div class="header-bottom">
+      <input id="searchInput" placeholder="Search course code or title..." />
+      <button id="searchBtn">Search</button>
+    </div>
+  </header>
+
+  <nav id="sidebar" class="sidebar" aria-hidden="true">
+  <button id="closeSidebar" class="close-btn" aria-label="Close menu">×</button> <!-- Moved to top and changed to multiplication sign -->
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="past.html">Past questions</a></li>
+    <li><a href="quiz.html">Quizzer</a></li>
+    <li><a href="store.html">Store</a></li>
+  </ul>
+</nav>
+
+  <main class="main">
+    <section class="selectors">
+      <label>Level
+        <select id="levelSel">
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="300">300</option>
+          <option value="400">400</option>
+        </select>
+      </label>
+      <label>Semester
+        <select id="semSel">
+          <option value="1">1</option>
+          <option value="2">2</option>
+        </select>
+      </label>
+      
+      <div id="categoryContainer" style="display: none;">
+        <label>Category
+          <select id="categorySel">
+            <option value="JHS">JHS</option>
+            <option value="primary">Primary</option>
+            <option value="early">Early Grade</option>
+          </select>
+        </label>
+      </div>
+      
+      <button id="loadCourses">Load Courses</button>
+    </section>
+
+    <section>
+      <h2>Courses</h2>
+      <div id="coursesList" class="courses-list"></div>
+    </section>
+  </main>
+
+  <!-- Firebase & Authentication -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/past.js"></script>
+</body>
+</html>

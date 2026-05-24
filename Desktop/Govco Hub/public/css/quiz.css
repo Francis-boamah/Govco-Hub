@@ -1,0 +1,44 @@
+/* quiz.css */
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:#fafafa}
+.site-header{
+  position:sticky;top:0;z-index:50;
+  background:#000;color:#fff;padding:8px 12px;
+  display:flex;flex-direction:column;
+}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.icon-btn{background:none;border:none;color:#fff;font-size:18px;padding:8px}
+.title{font-weight:700}
+.header-bottom{display:flex;gap:8px;margin-top:8px}
+.header-bottom input{flex:1;padding:10px;border-radius:6px;border:0}
+.header-bottom button{padding:10px;border-radius:6px;border:0;background:#222;color:#fff}
+
+.sidebar{
+  position:fixed;top:0;left:-100%;width:78%;height:100vh;background:#fff;color:#000;z-index:60;padding:16px;transition:left .22s ease;
+  box-shadow:2px 0 8px rgba(0,0,0,.2);
+  display: flex; 
+  flex-direction: column; 
+}
+
+.sidebar ul {
+  list-style:none;padding:0;margin:0;
+  flex: 1; 
+}
+
+.sidebar li{padding:12px 0;border-bottom:1px solid #eee}
+
+
+.close-btn{
+  background:none;border:0;font-size:24px; 
+  padding:8px 12px;
+  align-self: flex-end; 
+  margin-bottom: 16px; 
+  cursor: pointer;
+}
+.sidebar.show{left:0}
+.selectors{display:block;gap:8px;padding:12px;background:#fff}
+.selectors label{display:flex;flex-direction:column;font-size:13px}
+.quiz-area{padding:12px}
+.question-text{background:#fff;padding:12px;border-radius:8px;margin-top:8px}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.choice{background:#fff;padding:10px;border-radius:8px;border:1px solid #eee}
+.quiz-controls{display:flex;gap:8px;margin-top:10px}

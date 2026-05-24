@@ -1,0 +1,368 @@
+/* admin.css */
+:root {
+  --primary-color: #ff9800;
+  --secondary-color: #2196f3;
+  --bg-color: #f4f5f7;
+  --card-bg: #ffffff;
+  --text-dark: #333333;
+  --text-light: #777777;
+  --border-color: #e0e0e0;
+  --success-color: #4caf50;
+  --danger-color: #f44336;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-dark);
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 15px;
+}
+
+/* Tabs */
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-light);
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  color: var(--text-dark);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom: 3px solid var(--primary-color);
+  background-color: rgba(255, 152, 0, 0.08);
+}
+
+/* Tab content visibility */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Layout Grids */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media(min-width: 800px) {
+  .admin-grid {
+    grid-template-columns: 1.2fr 1.8fr;
+  }
+}
+
+/* Cards */
+.admin-card {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.admin-card h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+/* Forms */
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+}
+
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.file-upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  border: 2px dashed var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-light);
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.file-upload-label:hover {
+  border-color: var(--primary-color);
+  background-color: rgba(255, 152, 0, 0.03);
+  color: var(--primary-color);
+}
+
+.file-upload-label input {
+  display: none;
+}
+
+.image-preview-container {
+  max-width: 100%;
+  max-height: 150px;
+  overflow: hidden;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #eee;
+}
+
+.image-preview-container img {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.admin-form button {
+  background: linear-gradient(180deg, #ff9800, #f57c00);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.admin-form button:hover {
+  opacity: 0.95;
+}
+
+.admin-form button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Lists */
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 550px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: #fafafa;
+}
+
+.admin-item-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-item-details img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  background-color: #ddd;
+}
+
+.admin-item-info h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.admin-item-info p {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.admin-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-delete {
+  background: none;
+  border: 1px solid var(--danger-color);
+  color: var(--danger-color);
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+/* Orders Styling */
+.orders-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.order-id {
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.order-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.order-status.pending {
+  background-color: #fff3e0;
+  color: #ff9800;
+}
+
+.order-status.processing {
+  background-color: #e3f2fd;
+  color: #2196f3;
+}
+
+.order-status.delivered {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.order-info-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+@media(min-width: 600px) {
+  .order-info-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.order-customer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-address {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-items-list {
+  background-color: #fcfcfc;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.order-item-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.order-item-row:last-child {
+  margin-bottom: 0;
+}
+
+.order-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-total {
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.order-status-select {
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+}

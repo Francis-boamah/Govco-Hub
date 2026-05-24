@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GOVCO Hub — Admin Dashboard</title>
+  <link rel="stylesheet" href="css/index.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-top">
+      <button id="hamburger" class="icon-btn" aria-label="menu">☰</button>
+      <div class="title">GOVCO Hub — Admin Panel</div>
+      <div class="account-wrap">
+        <button id="accountBtn" class="icon-btn">Account</button>
+      </div>
+    </div>
+  </header>
+
+  <nav id="sidebar" class="sidebar" aria-hidden="true">
+    <button id="closeSidebar" class="close-btn" aria-label="Close menu">×</button>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="past.html">Past questions</a></li>
+      <li><a href="quiz.html">Quizzer</a></li>
+      <li><a href="store.html">Store</a></li>
+    </ul>
+  </nav>
+
+  <main class="main">
+    <div class="admin-tabs">
+      <button class="tab-btn active" data-tab="products">Products</button>
+      <button class="tab-btn" data-tab="courses">Courses</button>
+      <button class="tab-btn" data-tab="orders">Orders</button>
+      <button class="tab-btn" data-tab="news">News</button>
+    </div>
+
+    <!-- Products Section -->
+    <section id="products-tab" class="tab-content active">
+      <h2>Manage Products</h2>
+      
+      <div class="admin-grid">
+        <!-- Add Product Form -->
+        <div class="admin-card">
+          <h3>Add New Product</h3>
+          <form id="productForm" class="admin-form">
+            <input id="prodName" type="text" placeholder="Product Name" required />
+            <select id="prodCategory" required>
+              <option value="" disabled selected>Select Category</option>
+              <option value="dress">Dress</option>
+              <option value="accessories">Accessories</option>
+              <option value="electricals">Electricals</option>
+            </select>
+            <input id="prodPrice" type="number" step="0.01" placeholder="Price (GHS)" required />
+            <input id="prodMeta" type="text" placeholder="Meta / Description (e.g. Size M)" required />
+            <label class="file-upload-label">
+              <span>Upload Image</span>
+              <input id="prodImage" type="file" accept="image/*" />
+            </label>
+            <div id="imagePreview" class="image-preview-container"></div>
+            <button type="submit" id="prodSubmitBtn">Save Product</button>
+          </form>
+        </div>
+
+        <!-- Product List -->
+        <div class="admin-card">
+          <h3>Product Catalog</h3>
+          <div id="productList" class="admin-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Courses Section -->
+    <section id="courses-tab" class="tab-content">
+      <h2>Manage Courses & Past Questions</h2>
+      
+      <div class="admin-grid">
+        <!-- Add Course Form -->
+        <div class="admin-card">
+          <h3>Add New Course</h3>
+          <form id="courseForm" class="admin-form">
+            <input id="courseCode" type="text" placeholder="Course Code (e.g. PHYS101)" required />
+            <select id="courseLevel" required>
+              <option value="" disabled selected>Select Level</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="300">300</option>
+              <option value="400">400</option>
+            </select>
+            <select id="courseSemester" required>
+              <option value="" disabled selected>Select Semester</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+            <select id="courseCategory">
+              <option value="" selected>No Category (Level 100)</option>
+              <option value="JHS">JHS</option>
+              <option value="primary">Primary</option>
+              <option value="early">Early Grade</option>
+            </select>
+            <input id="coursePdfUrl" type="url" placeholder="OneDrive PDF Share Link" required />
+            <button type="submit" id="courseSubmitBtn">Save Course</button>
+          </form>
+        </div>
+
+        <!-- Course List -->
+        <div class="admin-card">
+          <h3>Course List</h3>
+          <div id="courseList" class="admin-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Orders Section -->
+    <section id="orders-tab" class="tab-content">
+      <h2>View Student Orders</h2>
+      <div class="admin-card">
+        <div id="ordersListContainer" class="orders-container">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- News Section -->
+    <section id="news-tab" class="tab-content">
+      <h2>Manage News Board</h2>
+      
+      <div class="admin-grid">
+        <!-- Add News Form -->
+        <div class="admin-card">
+          <h3>Post News Announcement</h3>
+          <form id="newsForm" class="admin-form">
+            <input id="newsTitle" type="text" placeholder="News Title" required />
+            <textarea id="newsBody" placeholder="News Description" rows="4" required></textarea>
+            <label class="file-upload-label">
+              <span>Upload Banner Image (Optional)</span>
+              <input id="newsImage" type="file" accept="image/*" />
+            </label>
+            <div id="newsImagePreview" class="image-preview-container"></div>
+            <button type="submit" id="newsSubmitBtn">Publish News</button>
+          </form>
+        </div>
+
+        <!-- News List -->
+        <div class="admin-card">
+          <h3>Published News</h3>
+          <div id="newsList" class="admin-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Import Firebase and App Configuration -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/admin.js"></script>
+</body>
+</html>

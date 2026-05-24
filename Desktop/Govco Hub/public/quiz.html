@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GOVCO Hub — Quizzer</title>
+  <link rel="stylesheet" href="css/quiz.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-top">
+      <button id="hamburger" class="icon-btn">☰</button>
+      <div class="title">Quizzer</div>
+      <div class="account-wrap"><button id="accountBtn" class="icon-btn">Account</button></div>
+    </div>
+  </header>
+  <nav id="sidebar" class="sidebar" aria-hidden="true">
+  <button id="closeSidebar" class="close-btn" aria-label="Close menu">×</button> <!-- Moved to top and changed to multiplication sign -->
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="past.html">Past questions</a></li>
+    <li><a href="quiz.html">Quizzer</a></li>
+    <li><a href="store.html">Store</a></li>
+  </ul>
+</nav>
+
+  <main class="main">
+    <section class="selectors">
+      <label>Level
+        <select id="level">
+          <option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="400">400</option>
+        </select>
+      </label>
+      <label>Semester
+        <select id="semester"><option value="1">1</option><option value="2">2</option></select>
+      </label>
+      <label>Course
+        <select id="courseSel">
+          <option value="ENGL101">ENGL101</option>
+          <option value="MATH101">MATH101</option>
+          <option value="CS101">CS101</option>
+        </select>
+      </label>
+      <button id="startQuiz">Start Quiz</button>
+    </section>
+
+    <section id="quizArea" class="quiz-area" style="display:none">
+      <div id="qNumber">Question 1 / 25</div>
+      <div id="questionText" class="question-text"></div>
+      <div id="choices" class="choices"></div>
+      <div class="quiz-controls">
+        <button id="prevBtn">Prev</button>
+        <button id="nextBtn">Next</button>
+        <button id="submitQuiz">Submit</button>
+      </div>
+    </section>
+
+    <section id="results" style="display:none"></section>
+  </main>
+
+  <!-- Firebase & Authentication -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/quiz.js"></script>
+</body>
+</html>

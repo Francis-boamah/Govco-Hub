@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GOVCO Hub — Login / Sign up</title>
+  <link rel="stylesheet" href="css/index.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-top">
+      <button id="hamburger" class="icon-btn" aria-label="menu">☰</button>
+      <div class="title">GOVCO Hub — Account</div>
+      <div class="account-wrap">
+        <button id="accountBtn" class="icon-btn">Account</button>
+      </div>
+    </div>
+  </header>
+
+  <nav id="sidebar" class="sidebar" aria-hidden="true">
+    <button id="closeSidebar" class="close-btn" aria-label="Close menu">×</button>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="past.html">Past questions</a></li>
+      <li><a href="quiz.html">Quizzer</a></li>
+      <li><a href="store.html">Store</a></li>
+    </ul>
+  </nav>
+
+  <main class="main auth-container">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button id="tabSignIn" class="auth-tab-btn active">Sign In</button>
+        <button id="tabSignUp" class="auth-tab-btn">Sign Up</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <form id="signInForm" class="auth-form-content active">
+        <h2>Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to your student account to place orders</p>
+        <input id="siEmail" type="email" placeholder="Email Address" required />
+        <input id="siPassword" type="password" placeholder="Password" required />
+        <button type="submit" class="btn-auth">Sign In</button>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="signUpForm" class="auth-form-content">
+        <h2>Create Account</h2>
+        <p class="auth-subtitle">Join GOVCO Hub to access past questions and the store</p>
+        <input id="suName" placeholder="Full Name" required />
+        <input id="suHouse" placeholder="House Name (e.g. Commonwealth)" required />
+        <input id="suRoom" placeholder="Room Number (e.g. A12)" required />
+        <input id="suPhone" placeholder="Phone Number (e.g. 0241234567)" required />
+        <input id="suEmail" type="email" placeholder="Email Address" required />
+        <input id="suPassword" type="password" placeholder="Password" required />
+        <button type="submit" class="btn-auth">Create Account</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    // Tab switching logic for sign-in / sign-up forms
+    document.addEventListener("DOMContentLoaded", () => {
+      const tabSignIn = document.getElementById("tabSignIn");
+      const tabSignUp = document.getElementById("tabSignUp");
+      const signInForm = document.getElementById("signInForm");
+      const signUpForm = document.getElementById("signUpForm");
+
+      tabSignIn.addEventListener("click", () => {
+        tabSignIn.classList.add("active");
+        tabSignUp.classList.remove("active");
+        signInForm.classList.add("active");
+        signUpForm.classList.remove("active");
+      });
+
+      tabSignUp.addEventListener("click", () => {
+        tabSignUp.classList.add("active");
+        tabSignIn.classList.remove("active");
+        signUpForm.classList.add("active");
+        signInForm.classList.remove("active");
+      });
+      
+      // Sidebar simple functionality (fallback just in case)
+      const sidebar = document.getElementById("sidebar");
+      document.getElementById("hamburger")?.addEventListener("click", () => sidebar.classList.add("show"));
+      document.getElementById("closeSidebar")?.addEventListener("click", () => sidebar.classList.remove("show"));
+    });
+  </script>
+
+  <!-- Firebase & Authentication -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script defer src="js/auth.js"></script>
+</body>
+</html>
