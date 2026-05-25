@@ -1,510 +1,372 @@
-// admin.js
+﻿// admin.js - Admin panel backed by PHP APIs
 (function () {
-  // Guard check for admin authentication
-  if (!window.firebase) {
-    console.error("Firebase is not loaded.");
+  const user = JSON.parse(localStorage.getItem('govco_user_v1') || 'null');
+
+  if (!user || !user.isAdmin) {
+    alert('Admin access required. Please sign in with an administrator account.');
+    window.location.href = 'auth.html';
     return;
   }
 
-  const {
-    auth,
-    db,
-    storage,
-    onAuthStateChanged,
-    doc,
-    getDoc,
-    setDoc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    collection,
-    getDocs,
-    query,
-    orderBy,
-    where,
-    ref,
-    uploadBytes,
-    getDownloadURL,
-    serverTimestamp
-  } = window.firebase;
+  function getElement(id) {
+    return document.getElementById(id);
+  }
 
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      alert("Access Denied: Please sign in first.");
-      window.location.href = "index.html";
+  async function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Unable to read file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function initTabs() {
+    const buttons = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        buttons.forEach((btn) => btn.classList.remove('active'));
+        contents.forEach((content) => content.classList.remove('active'));
+
+        button.classList.add('active');
+        const target = button.dataset.tab;
+        getElement(`${target}-tab`)?.classList.add('active');
+
+        if (target === 'products') loadProducts();
+        if (target === 'courses') loadCourses();
+        if (target === 'orders') loadOrders();
+        if (target === 'news') loadNews();
+      });
+    });
+  }
+
+  async function loadProducts() {
+    try {
+      const products = await window.govcoApi.fetchProducts();
+      renderProductList(products);
+    } catch (err) {
+      console.error(err);
+      alert('Unable to load products.');
+    }
+  }
+
+  async function loadCourses() {
+    try {
+      const courses = await window.govcoApi.fetchCourses();
+      renderCourseList(courses);
+    } catch (err) {
+      console.error(err);
+      alert('Unable to load courses.');
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const orders = await window.govcoApi.fetchOrders();
+      renderOrderList(orders);
+    } catch (err) {
+      console.error(err);
+      alert('Unable to load orders.');
+    }
+  }
+
+  async function loadNews() {
+    try {
+      const news = await window.govcoApi.fetchNews();
+      renderNewsList(news);
+    } catch (err) {
+      console.error(err);
+      alert('Unable to load news items.');
+    }
+  }
+
+  function renderProductList(products) {
+    const list = getElement('productList');
+    list.innerHTML = '';
+
+    if (!products.length) {
+      list.innerHTML = '<p>No products found.</p>';
       return;
     }
 
-    try {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (!snap.exists() || !snap.data().isAdmin) {
-        alert("Access Denied: You do not have administrator permissions.");
-        window.location.href = "index.html";
-        return;
-      }
-
-      // User is verified admin!
-      initAdminPanel();
-    } catch (err) {
-      console.error("Auth check failed:", err);
-      alert("Auth verification failed. Redirecting...");
-      window.location.href = "index.html";
-    }
-  });
-
-  function initAdminPanel() {
-    // 1. Manage Tabs
-    const tabButtons = document.querySelectorAll(".tab-btn");
-    const tabContents = document.querySelectorAll(".tab-content");
-
-    tabButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        tabButtons.forEach(b => b.classList.remove("active"));
-        tabContents.forEach(c => c.classList.remove("active"));
-
-        btn.classList.add("active");
-        const target = btn.dataset.tab;
-        document.getElementById(`${target}-tab`).classList.add("active");
-
-        // Load relevant tab data
-        if (target === "products") loadProducts();
-        else if (target === "courses") loadCourses();
-        else if (target === "orders") loadOrders();
-        else if (target === "news") loadNews();
-      });
+    products.forEach((product) => {
+      const card = document.createElement('div');
+      card.className = 'admin-item';
+      card.innerHTML = `
+        <div class="item-data">
+          <strong>${product.name}</strong>
+          <span>${product.description || 'No description'}</span>
+          <span>GHS ${parseFloat(product.price).toFixed(2)}</span>
+        </div>
+        <div class="item-actions">
+          <button type="button" data-id="${product.id}" class="delete-product">Remove</button>
+        </div>
+      `;
+      list.appendChild(card);
     });
 
-    // 2. Previews for Product Image upload
-    const prodImage = document.getElementById("prodImage");
-    const imagePreview = document.getElementById("imagePreview");
-    if (prodImage && imagePreview) {
-      prodImage.addEventListener("change", () => {
-        const file = prodImage.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          imagePreview.innerHTML = "";
-        }
-      });
-    }
-
-    // Previews for News Banner Image upload
-    const newsImage = document.getElementById("newsImage");
-    const newsImagePreview = document.getElementById("newsImagePreview");
-    if (newsImage && newsImagePreview) {
-      newsImage.addEventListener("change", () => {
-        const file = newsImage.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            newsImagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
-          };
-          reader.readAsDataURL(file);
-        } else {
-          newsImagePreview.innerHTML = "";
-        }
-      });
-    }
-
-    // 3. Products Operations
-    const productForm = document.getElementById("productForm");
-    if (productForm) {
-      productForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const submitBtn = document.getElementById("prodSubmitBtn");
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Saving...";
-
-        const name = document.getElementById("prodName").value.trim();
-        const category = document.getElementById("prodCategory").value;
-        const price = parseFloat(document.getElementById("prodPrice").value);
-        const meta = document.getElementById("prodMeta").value.trim();
-        const imageFile = document.getElementById("prodImage").files[0];
-
+    list.querySelectorAll('.delete-product').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove this product permanently?')) return;
         try {
-          let imageUrl = null;
-          if (imageFile) {
-            const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-            const uploadSnap = await uploadBytes(storageRef, imageFile);
-            imageUrl = await getDownloadURL(uploadSnap.ref);
-          }
-
-          await addDoc(collection(db, "products"), {
-            name,
-            category,
-            price,
-            meta,
-            imageUrl,
-            createdAt: serverTimestamp()
-          });
-
-          productForm.reset();
-          if (imagePreview) imagePreview.innerHTML = "";
-          alert("Product added successfully!");
+          await window.govcoApi.deleteProduct(btn.dataset.id);
           loadProducts();
         } catch (err) {
           console.error(err);
-          alert("Failed to add product: " + err.message);
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Save Product";
+          alert('Failed to remove product.');
         }
       });
+    });
+  }
+
+  function renderCourseList(courses) {
+    const list = getElement('courseList');
+    list.innerHTML = '';
+
+    if (!courses.length) {
+      list.innerHTML = '<p>No course entries found.</p>';
+      return;
     }
 
-    // 4. Courses Operations
-    const courseForm = document.getElementById("courseForm");
-    if (courseForm) {
-      courseForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const submitBtn = document.getElementById("courseSubmitBtn");
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Saving...";
+    courses.forEach((course) => {
+      const card = document.createElement('div');
+      card.className = 'admin-item';
+      card.innerHTML = `
+        <div class="item-data">
+          <strong>${course.course_code}</strong>
+          <span>Level ${course.level} • Semester ${course.semester} ${course.category ? '• ' + course.category : ''}</span>
+          <a href="${course.file_path}" target="_blank" rel="noreferrer">View file</a>
+        </div>
+        <div class="item-actions">
+          <button type="button" data-id="${course.id}" class="delete-course">Remove</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
 
-        const code = document.getElementById("courseCode").value.trim().toUpperCase();
-        const level = document.getElementById("courseLevel").value;
-        const semester = document.getElementById("courseSemester").value;
-        const category = document.getElementById("courseCategory").value || null;
-        const pdfUrl = document.getElementById("coursePdfUrl").value.trim();
-
+    list.querySelectorAll('.delete-course').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this course entry?')) return;
         try {
-          await addDoc(collection(db, "courses"), {
-            code,
-            level,
-            semester,
-            category,
-            pdfUrl,
-            createdAt: serverTimestamp()
-          });
-
-          courseForm.reset();
-          alert("Course added successfully!");
+          await window.govcoApi.deleteCourse(btn.dataset.id);
           loadCourses();
         } catch (err) {
           console.error(err);
-          alert("Failed to add course: " + err.message);
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Save Course";
+          alert('Failed to delete course entry.');
         }
       });
+    });
+  }
+
+  function renderNewsList(newsItems) {
+    const list = getElement('newsList');
+    list.innerHTML = '';
+
+    if (!newsItems.length) {
+      list.innerHTML = '<p>No news items found.</p>';
+      return;
     }
 
-    // 5. News Operations
-    const newsForm = document.getElementById("newsForm");
-    if (newsForm) {
-      newsForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const submitBtn = document.getElementById("newsSubmitBtn");
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Publishing...";
+    newsItems.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'admin-item';
+      card.innerHTML = `
+        <div class="item-data">
+          <strong>${item.title}</strong>
+          <span>${item.body}</span>
+          ${item.image_url ? `<img src="${item.image_url}" alt="News image" class="news-image" />` : ''}
+        </div>
+        <div class="item-actions">
+          <button type="button" data-id="${item.id}" class="delete-news">Remove</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
 
-        const title = document.getElementById("newsTitle").value.trim();
-        const body = document.getElementById("newsBody").value.trim();
-        const imageFile = document.getElementById("newsImage").files[0];
-
+    list.querySelectorAll('.delete-news').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this news item?')) return;
         try {
-          let imageUrl = null;
-          if (imageFile) {
-            const storageRef = ref(storage, `news/${Date.now()}_${imageFile.name}`);
-            const uploadSnap = await uploadBytes(storageRef, imageFile);
-            imageUrl = await getDownloadURL(uploadSnap.ref);
-          }
-
-          await addDoc(collection(db, "news"), {
-            title,
-            body,
-            imageUrl,
-            createdAt: serverTimestamp()
-          });
-
-          newsForm.reset();
-          if (newsImagePreview) newsImagePreview.innerHTML = "";
-          alert("News announcement posted successfully!");
+          await window.govcoApi.deleteNews(btn.dataset.id);
           loadNews();
         } catch (err) {
           console.error(err);
-          alert("Failed to publish news: " + err.message);
-        } finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Publish News";
+          alert('Failed to delete news item.');
         }
       });
+    });
+  }
+
+  function renderOrderList(orders) {
+    const container = getElement('ordersListContainer');
+    container.innerHTML = '';
+
+    if (!orders.length) {
+      container.innerHTML = '<p>No orders found.</p>';
+      return;
     }
 
-    // Initial Load of active tab
+    orders.forEach((order) => {
+      const card = document.createElement('div');
+      card.className = 'admin-order';
+      card.innerHTML = `
+        <div class="order-row"><strong>Order ID:</strong> ${order.id}</div>
+        <div class="order-row"><strong>Name:</strong> ${order.customer_name}</div>
+        <div class="order-row"><strong>Email:</strong> ${order.customer_email}</div>
+        <div class="order-row"><strong>Phone:</strong> ${order.customer_phone}</div>
+        <div class="order-row"><strong>Total:</strong> GHS ${parseFloat(order.total).toFixed(2)}</div>
+        <div class="order-row"><strong>Status:</strong> ${order.status}</div>
+        <div class="order-row"><strong>Placed:</strong> ${new Date(order.created_at).toLocaleString()}</div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function attachImagePreview(inputId, previewId) {
+    const input = getElement(inputId);
+    const preview = getElement(previewId);
+
+    if (!input || !preview) {
+      return;
+    }
+
+    input.addEventListener('change', () => {
+      const file = input.files[0];
+      if (!file) {
+        preview.innerHTML = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        preview.innerHTML = `<img src="${reader.result}" alt="Preview" />`;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleProductSubmit(event) {
+    event.preventDefault();
+    const submitBtn = getElement('prodSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
+    try {
+      const name = getElement('prodName').value.trim();
+      const category = getElement('prodCategory').value;
+      const price = getElement('prodPrice').value.trim();
+      const description = getElement('prodMeta').value.trim();
+      const imageFile = getElement('prodImage').files[0];
+
+      const payload = { name, price, description: `${category} • ${description}` };
+      if (imageFile) {
+        payload.imageBase64 = await readFileAsDataUrl(imageFile);
+      }
+
+      await window.govcoApi.createProduct(payload);
+      event.target.reset();
+      getElement('imagePreview').innerHTML = '';
+      loadProducts();
+      alert('Product saved successfully.');
+    } catch (err) {
+      console.error(err);
+      alert('Unable to save product.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Save Product';
+    }
+  }
+
+  async function handleCourseSubmit(event) {
+    event.preventDefault();
+    const submitBtn = getElement('courseSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
+    try {
+      const payload = {
+        courseCode: getElement('courseCode').value.trim(),
+        level: getElement('courseLevel').value,
+        semester: getElement('courseSemester').value,
+        category: getElement('courseCategory').value || '',
+        pdfUrl: getElement('coursePdfUrl').value.trim(),
+      };
+
+      await window.govcoApi.createCourse(payload);
+      event.target.reset();
+      loadCourses();
+      alert('Course entry added successfully.');
+    } catch (err) {
+      console.error(err);
+      alert('Unable to save course entry.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Save Course';
+    }
+  }
+
+  async function handleNewsSubmit(event) {
+    event.preventDefault();
+    const submitBtn = getElement('newsSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
+    try {
+      const imageFile = getElement('newsImage').files[0];
+      const payload = {
+        title: getElement('newsTitle').value.trim(),
+        body: getElement('newsBody').value.trim(),
+      };
+      if (imageFile) {
+        payload.imageBase64 = await readFileAsDataUrl(imageFile);
+      }
+
+      await window.govcoApi.createNews(payload);
+      event.target.reset();
+      getElement('newsImagePreview').innerHTML = '';
+      loadNews();
+      alert('News item published successfully.');
+    } catch (err) {
+      console.error(err);
+      alert('Unable to publish news.');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Publish News';
+    }
+  }
+
+  function initForms() {
+    const productForm = getElement('productForm');
+    const courseForm = getElement('courseForm');
+    const newsForm = getElement('newsForm');
+
+    if (productForm) {
+      productForm.addEventListener('submit', handleProductSubmit);
+    }
+    if (courseForm) {
+      courseForm.addEventListener('submit', handleCourseSubmit);
+    }
+    if (newsForm) {
+      newsForm.addEventListener('submit', handleNewsSubmit);
+    }
+
+    attachImagePreview('prodImage', 'imagePreview');
+    attachImagePreview('newsImage', 'newsImagePreview');
+  }
+
+  function initAdminPanel() {
+    initTabs();
+    initForms();
     loadProducts();
+    loadCourses();
+    loadOrders();
+    loadNews();
   }
 
-  // Load Products list
-  async function loadProducts() {
-    const productList = document.getElementById("productList");
-    if (!productList) return;
-    productList.innerHTML = "<div>Loading products...</div>";
-    try {
-      const snap = await getDocs(query(collection(db, "products"), orderBy("createdAt", "desc")));
-      productList.innerHTML = "";
-      if (snap.empty) {
-        productList.innerHTML = "<div>No products found.</div>";
-        return;
-      }
-      snap.forEach(docSnap => {
-        const p = docSnap.data();
-        const pId = docSnap.id;
-
-        const item = document.createElement("div");
-        item.className = "admin-item";
-
-        const details = document.createElement("div");
-        details.className = "admin-item-details";
-
-        if (p.imageUrl) {
-          details.innerHTML = `<img src="${p.imageUrl}" alt="product" />`;
-        } else {
-          details.innerHTML = `<div style="width:48px;height:48px;border-radius:4px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:10px;color:#777">No Image</div>`;
-        }
-
-        const info = document.createElement("div");
-        info.className = "admin-item-info";
-        info.innerHTML = `<h4>${p.name}</h4><p>${p.category} — GHS ${(p.price || 0).toFixed(2)} (${p.meta || ""})</p>`;
-        details.appendChild(info);
-
-        const actions = document.createElement("div");
-        actions.className = "admin-item-actions";
-        const delBtn = document.createElement("button");
-        delBtn.className = "btn-delete";
-        delBtn.textContent = "Delete";
-        delBtn.onclick = async () => {
-          if (confirm(`Are you sure you want to delete ${p.name}?`)) {
-            await deleteDoc(doc(db, "products", pId));
-            loadProducts();
-          }
-        };
-        actions.appendChild(delBtn);
-
-        item.appendChild(details);
-        item.appendChild(actions);
-        productList.appendChild(item);
-      });
-    } catch (err) {
-      console.error(err);
-      productList.innerHTML = "<div>Error loading products.</div>";
-    }
-  }
-
-  // Load Courses list
-  async function loadCourses() {
-    const courseList = document.getElementById("courseList");
-    if (!courseList) return;
-    courseList.innerHTML = "<div>Loading courses...</div>";
-    try {
-      const snap = await getDocs(query(collection(db, "courses"), orderBy("code", "asc")));
-      courseList.innerHTML = "";
-      if (snap.empty) {
-        courseList.innerHTML = "<div>No courses found.</div>";
-        return;
-      }
-      snap.forEach(docSnap => {
-        const c = docSnap.data();
-        const cId = docSnap.id;
-
-        const item = document.createElement("div");
-        item.className = "admin-item";
-
-        const details = document.createElement("div");
-        details.className = "admin-item-info";
-        details.innerHTML = `<h4>${c.code}</h4><p>Level ${c.level}, Sem ${c.semester} ${c.category ? '— ' + c.category : ''}</p>
-        <a href="${c.pdfUrl}" target="_blank" style="font-size: 11px; color:#2196f3; text-decoration:none">OneDrive Link</a>`;
-
-        const actions = document.createElement("div");
-        actions.className = "admin-item-actions";
-        const delBtn = document.createElement("button");
-        delBtn.className = "btn-delete";
-        delBtn.textContent = "Delete";
-        delBtn.onclick = async () => {
-          if (confirm(`Delete course ${c.code}?`)) {
-            await deleteDoc(doc(db, "courses", cId));
-            loadCourses();
-          }
-        };
-        actions.appendChild(delBtn);
-
-        item.appendChild(details);
-        item.appendChild(actions);
-        courseList.appendChild(item);
-      });
-    } catch (err) {
-      console.error(err);
-      courseList.innerHTML = "<div>Error loading courses.</div>";
-    }
-  }
-
-  // Load News list
-  async function loadNews() {
-    const newsList = document.getElementById("newsList");
-    if (!newsList) return;
-    newsList.innerHTML = "<div>Loading announcements...</div>";
-    try {
-      const snap = await getDocs(query(collection(db, "news"), orderBy("createdAt", "desc")));
-      newsList.innerHTML = "";
-      if (snap.empty) {
-        newsList.innerHTML = "<div>No news published.</div>";
-        return;
-      }
-      snap.forEach(docSnap => {
-        const n = docSnap.data();
-        const nId = docSnap.id;
-
-        const item = document.createElement("div");
-        item.className = "admin-item";
-
-        const details = document.createElement("div");
-        details.className = "admin-item-details";
-        if (n.imageUrl) {
-          details.innerHTML = `<img src="${n.imageUrl}" alt="news" />`;
-        } else {
-          details.innerHTML = `<div style="width:48px;height:48px;border-radius:4px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:10px;color:#777">No Image</div>`;
-        }
-
-        const info = document.createElement("div");
-        info.className = "admin-item-info";
-        info.innerHTML = `<h4>${n.title}</h4><p>${n.body || ''}</p>`;
-        details.appendChild(info);
-
-        const actions = document.createElement("div");
-        actions.className = "admin-item-actions";
-        const delBtn = document.createElement("button");
-        delBtn.className = "btn-delete";
-        delBtn.textContent = "Delete";
-        delBtn.onclick = async () => {
-          if (confirm(`Delete news "${n.title}"?`)) {
-            await deleteDoc(doc(db, "news", nId));
-            loadNews();
-          }
-        };
-        actions.appendChild(delBtn);
-
-        item.appendChild(details);
-        item.appendChild(actions);
-        newsList.appendChild(item);
-      });
-    } catch (err) {
-      console.error(err);
-      newsList.innerHTML = "<div>Error loading news.</div>";
-    }
-  }
-
-  // Load Orders list
-  async function loadOrders() {
-    const ordersContainer = document.getElementById("ordersListContainer");
-    if (!ordersContainer) return;
-    ordersContainer.innerHTML = "<div>Loading orders...</div>";
-    try {
-      const snap = await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc")));
-      ordersContainer.innerHTML = "";
-      if (snap.empty) {
-        ordersContainer.innerHTML = "<div>No orders have been placed yet.</div>";
-        return;
-      }
-
-      for (const orderSnap of snap.docs) {
-        const order = orderSnap.data();
-        const orderId = orderSnap.id;
-
-        // Fetch items subcollection
-        const itemsSnap = await getDocs(collection(db, `orders/${orderId}/items`));
-        const itemsList = [];
-        itemsSnap.forEach(itemDoc => {
-          itemsList.push(itemDoc.data());
-        });
-
-        const card = document.createElement("div");
-        card.className = "order-card";
-
-        // Header
-        const header = document.createElement("div");
-        header.className = "order-header";
-        header.innerHTML = `<span class="order-id">#${orderId}</span>
-        <span class="order-status ${order.status}">${order.status}</span>`;
-        card.appendChild(header);
-
-        // Customer & Delivery Info
-        const infoRow = document.createElement("div");
-        infoRow.className = "order-info-row";
-
-        const customerCol = document.createElement("div");
-        customerCol.className = "order-customer";
-        customerCol.innerHTML = `<strong>Customer:</strong>
-        <span>Name: ${order.customerName}</span>
-        <span>Email: ${order.customerEmail}</span>
-        <span>Phone: ${order.customerPhone}</span>`;
-
-        const addressCol = document.createElement("div");
-        addressCol.className = "order-address";
-        addressCol.innerHTML = `<strong>Delivery:</strong>
-        <span>House: ${order.house}</span>
-        <span>Room: ${order.room}</span>
-        <span>Notes: ${order.notes || "None"}</span>`;
-
-        infoRow.appendChild(customerCol);
-        infoRow.appendChild(addressCol);
-        card.appendChild(infoRow);
-
-        // Items List
-        const itemsListDiv = document.createElement("div");
-        itemsListDiv.className = "order-items-list";
-        itemsList.forEach(item => {
-          const itemRow = document.createElement("div");
-          itemRow.className = "order-item-row";
-          itemRow.innerHTML = `<span>${item.productName} x ${item.qty}</span>
-          <span>GHS ${(item.unitPrice * item.qty).toFixed(2)}</span>`;
-          itemsListDiv.appendChild(itemRow);
-        });
-        card.appendChild(itemsListDiv);
-
-        // Footer Actions
-        const actionsDiv = document.createElement("div");
-        actionsDiv.className = "order-actions";
-
-        const totalSpan = document.createElement("span");
-        totalSpan.className = "order-total";
-        totalSpan.textContent = `Total: GHS ${(order.total || 0).toFixed(2)}`;
-
-        const select = document.createElement("select");
-        select.className = "order-status-select";
-        const options = ["pending", "processing", "delivered"];
-        options.forEach(opt => {
-          const o = document.createElement("option");
-          o.value = opt;
-          o.textContent = opt.charAt(0).toUpperCase() + opt.slice(1);
-          if (order.status === opt) o.selected = true;
-          select.appendChild(o);
-        });
-
-        select.onchange = async () => {
-          const newStatus = select.value;
-          try {
-            await updateDoc(doc(db, "orders", orderId), { status: newStatus });
-            alert("Order status updated successfully!");
-            loadOrders();
-          } catch (err) {
-            alert("Failed to update status: " + err.message);
-          }
-        };
-
-        actionsDiv.appendChild(totalSpan);
-        actionsDiv.appendChild(select);
-        card.appendChild(actionsDiv);
-
-        ordersContainer.appendChild(card);
-      }
-    } catch (err) {
-      console.error(err);
-      ordersContainer.innerHTML = "<div>Error loading orders.</div>";
-    }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminPanel);
+  } else {
+    initAdminPanel();
   }
 })();

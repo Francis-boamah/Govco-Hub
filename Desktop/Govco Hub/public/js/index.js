@@ -1,7 +1,5 @@
-// index.js
-// Homepage behavior: sidebar, news and products rendering from Firestore, cart counter
+// index.js - Homepage behavior using PHP product API
 (function(){
-  // Utilities
   function $(sel){return document.querySelector(sel)}
   function drawPlaceholderSVG(container,width=72,height=72,label="No image"){
     const xmlns = "http://www.w3.org/2000/svg";
@@ -26,7 +24,6 @@
     }
   }
 
-  // sidebar
   const sidebar = $("#sidebar");
   if ($("#hamburger")) {
     $("#hamburger").addEventListener("click", ()=> sidebar.classList.add("show"));
@@ -35,7 +32,6 @@
     $("#closeSidebar").addEventListener("click", ()=> sidebar.classList.remove("show"));
   }
   
-  // Close sidebar when clicking outside
   document.addEventListener('click', (event) => {
       const sidebar = document.getElementById('sidebar');
       const hamburger = document.getElementById('hamburger');
@@ -50,102 +46,34 @@
       }
   });
 
-  // Load news from Firestore
   async function loadNews() {
     const newsGrid = $("#newsGrid");
     if (!newsGrid) return;
-    newsGrid.innerHTML = '<div>Loading news...</div>';
-
-    try {
-      const { db, collection, getDocs, query, orderBy, limit } = window.firebase;
-      const q = query(collection(db, 'news'), orderBy('createdAt', 'desc'), limit(5));
-      const snap = await getDocs(q);
-      
-      newsGrid.innerHTML = '';
-      if (snap.empty) {
-        newsGrid.innerHTML = '<div>No news available at this time.</div>';
-        return;
-      }
-
-      snap.forEach(docSnap => {
-        const n = docSnap.data();
-        const card = document.createElement('div');
-        card.className = 'news-card';
-        card.style.display = 'flex';
-        card.style.gap = '12px';
-        card.style.alignItems = 'center';
-        
-        const thumb = document.createElement('div'); 
-        thumb.className = 'thumb';
-        
-        if (n.imageUrl) {
-          const img = document.createElement('img');
-          img.src = n.imageUrl;
-          img.style.width = '72px';
-          img.style.height = '72px';
-          img.style.objectFit = 'cover';
-          img.style.borderRadius = '8px';
-          thumb.appendChild(img);
-        } else {
-          drawPlaceholderSVG(thumb, 72, 72, 'NEWS');
-        }
-        
-        const contentWrap = document.createElement('div');
-        contentWrap.style.display = 'flex';
-        contentWrap.style.flexDirection = 'column';
-        contentWrap.style.justifyContent = 'center';
-        
-        const h = document.createElement('div'); 
-        h.textContent = n.title;
-        h.style.fontWeight = 'bold';
-        
-        const body = document.createElement('div');
-        body.textContent = n.body || '';
-        body.style.fontSize = '12px';
-        body.style.color = '#666';
-        body.style.marginTop = '4px';
-
-        contentWrap.appendChild(h);
-        contentWrap.appendChild(body);
-
-        card.appendChild(thumb); 
-        card.appendChild(contentWrap);
-        newsGrid.appendChild(card);
-      });
-    } catch (err) {
-      console.error("Error loading news:", err);
-      newsGrid.innerHTML = '<div>Error loading news.</div>';
-    }
+    newsGrid.innerHTML = '<div>No news available at this time.</div>';
   }
 
-  // Load products from Firestore
   async function loadProducts() {
     const productGrid = $("#productGrid");
     if (!productGrid) return;
     productGrid.innerHTML = '<div>Loading products...</div>';
 
     try {
-      const { db, collection, getDocs, query, orderBy, limit } = window.firebase;
-      const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(6));
-      const snap = await getDocs(q);
-
+      const products = await window.govcoApi.fetchProducts();
       productGrid.innerHTML = '';
-      if (snap.empty) {
+      if (!products.length) {
         productGrid.innerHTML = '<div>No products in store.</div>';
         return;
       }
 
-      snap.forEach(docSnap => {
-        const p = docSnap.data();
-        const pId = docSnap.id;
-
+      products.slice(0, 6).forEach(p => {
+        const pId = p.id;
         const pc = document.createElement('div'); pc.className='product-card';
         const imgWrap = document.createElement('div'); imgWrap.className='img';
         
-        if(p.imageUrl){ 
-          const img = document.createElement('img'); 
-          img.src = p.imageUrl; 
-          img.style.maxWidth = '100%'; 
+        if(p.image_url){ 
+          const img = document.createElement('img');
+          img.src = p.image_url;
+          img.style.maxWidth = '100%';
           img.style.maxHeight = '120px';
           img.style.objectFit = 'contain';
           imgWrap.appendChild(img);
@@ -154,7 +82,7 @@
         }
         
         const name = document.createElement('div'); name.textContent = p.name;
-        const meta = document.createElement('div'); meta.className='meta'; meta.textContent = `${p.meta || ''} — GHS ${(p.price || 0).toFixed(2)}`;
+        const meta = document.createElement('div'); meta.className='meta'; meta.textContent = `${p.description || ''} — GHS ${(parseFloat(p.price) || 0).toFixed(2)}`;
         const controls = document.createElement('div'); controls.className='controls';
         const qtyWrap = document.createElement('div'); qtyWrap.className='qty';
         const minus = document.createElement('button'); minus.textContent='-';
@@ -180,29 +108,25 @@
         productGrid.appendChild(pc);
       });
     } catch (err) {
-      console.error("Error loading products:", err);
+      console.error('Error loading products:', err);
       productGrid.innerHTML = '<div>Error loading products.</div>';
     }
   }
 
-  // search button action
   if ($("#searchBtn")) {
     $("#searchBtn").addEventListener("click", ()=>{
       const q = $("#searchInput").value.trim();
       if(!q) return alert("Type something to search");
-      const isProduct = ["dress","accessory","electrical","lamp","fan","wallet"].some(w=>q.toLowerCase().includes(w));
-      window.location.href = isProduct ? 'store.html' : 'past.html';
+      window.location.href = 'store.html';
     });
   }
 
-  // Initialize on page load
   document.addEventListener('DOMContentLoaded', () => {
     updateCounter();
     loadNews();
     loadProducts();
   });
   
-  // Also run immediately if DOM is already loaded
   if (document.readyState !== 'loading') {
     updateCounter();
     loadNews();

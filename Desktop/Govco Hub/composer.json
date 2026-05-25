@@ -1,0 +1,14 @@
+{
+  "name": "govco-hub/backend",
+  "description": "Govco Hub - PHP Backend API",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "phpmailer/phpmailer": "^6.8"
+  },
+  "autoload": {
+    "psr-4": {
+      "GovcoHub\\": "src/"
+    }
+  }
+}

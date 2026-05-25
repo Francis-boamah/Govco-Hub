@@ -1,46 +1,43 @@
-// auth.js - Shared Firebase authentication and user profile sync
+// auth.js - Local auth manager for GOVCO Hub
 (function () {
-  const userKey = "govco_user_v1";
+  const userKey = 'govco_user_v1';
+  const usersKey = 'govco_users_v1';
 
-  // Check if firebase is loaded
-  if (!window.firebase) {
-    console.error("Firebase config is not loaded. Please include firebase-config.js first.");
-    return;
+  function getStoredUsers() {
+    return JSON.parse(localStorage.getItem(usersKey) || '[]');
   }
 
-  const {
-    auth,
-    db,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    doc,
-    getDoc,
-    setDoc
-  } = window.firebase;
+  function saveStoredUsers(users) {
+    localStorage.setItem(usersKey, JSON.stringify(users));
+  }
 
-  // Update account button text and behavior
+  function getCurrentUser() {
+    return JSON.parse(localStorage.getItem(userKey) || 'null');
+  }
+
+  function setCurrentUser(user) {
+    localStorage.setItem(userKey, JSON.stringify(user));
+  }
+
+  function clearCurrentUser() {
+    localStorage.removeItem(userKey);
+  }
+
   function updateUI(userProfile) {
     const accountBtn = document.getElementById('accountBtn');
     if (accountBtn) {
       if (userProfile) {
         accountBtn.textContent = userProfile.name || userProfile.email.split('@')[0];
-        accountBtn.onclick = async (e) => {
+        accountBtn.onclick = () => {
           const confirmed = confirm(`Signed in as ${userProfile.name || userProfile.email}\nTap OK to sign out.`);
           if (confirmed) {
-            try {
-              await signOut(auth);
-              localStorage.removeItem(userKey);
-              window.location.reload();
-            } catch (err) {
-              alert("Error signing out: " + err.message);
-            }
+            clearCurrentUser();
+            window.location.reload();
           }
         };
       } else {
-        accountBtn.textContent = "Account";
-        accountBtn.onclick = (e) => {
+        accountBtn.textContent = 'Account';
+        accountBtn.onclick = () => {
           const authModal = document.getElementById('authModal');
           if (authModal) {
             authModal.classList.add('show');
@@ -51,7 +48,6 @@
       }
     }
 
-    // Update sidebar for admin users
     const sidebarUl = document.querySelector('#sidebar ul');
     if (sidebarUl) {
       const existingAdminLink = document.getElementById('adminSidebarLink');
@@ -68,49 +64,11 @@
     }
   }
 
-  // Monitor auth state changes
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      let cached = localStorage.getItem(userKey);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.email === user.email) {
-          updateUI(parsed);
-        }
-      }
+  function loadCurrentUser() {
+    const userProfile = getCurrentUser();
+    updateUI(userProfile);
+  }
 
-      try {
-        const userDocRef = doc(db, "users", user.uid);
-        const snap = await getDoc(userDocRef);
-        if (snap.exists()) {
-          const profile = snap.data();
-          localStorage.setItem(userKey, JSON.stringify(profile));
-          updateUI(profile);
-        } else {
-          // If Firestore profile doesn't exist, create a basic one
-          const profile = {
-            name: user.displayName || user.email.split('@')[0],
-            email: user.email,
-            house: "",
-            room: "",
-            phone: "",
-            isAdmin: false,
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(userDocRef, profile);
-          localStorage.setItem(userKey, JSON.stringify(profile));
-          updateUI(profile);
-        }
-      } catch (err) {
-        console.error("Error fetching user profile:", err);
-      }
-    } else {
-      localStorage.removeItem(userKey);
-      updateUI(null);
-    }
-  });
-
-  // Attach submit listeners if forms are present on the current page
   function initAuthForms() {
     const authModal = document.getElementById('authModal');
     const closeAuth = document.getElementById('closeAuth');
@@ -122,26 +80,30 @@
     }
 
     if (signInForm) {
-      signInForm.addEventListener("submit", async (ev) => {
+      signInForm.addEventListener('submit', (ev) => {
         ev.preventDefault();
         const email = document.getElementById('siEmail').value.trim();
         const pass = document.getElementById('siPassword').value;
+        const users = getStoredUsers();
+        const account = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-        try {
-          await signInWithEmailAndPassword(auth, email, pass);
-          if (authModal) authModal.classList.remove('show');
-          alert("Signed in successfully!");
-          if (window.location.pathname.endsWith('auth.html')) {
-            window.location.href = 'index.html';
-          }
-        } catch (err) {
-          alert("Sign in failed: " + err.message);
+        if (!account || account.password !== pass) {
+          alert('Sign in failed: Invalid email or password.');
+          return;
+        }
+
+        setCurrentUser(account);
+        if (authModal) authModal.classList.remove('show');
+        updateUI(account);
+        alert('Signed in successfully!');
+        if (window.location.pathname.endsWith('auth.html')) {
+          window.location.href = 'index.html';
         }
       });
     }
 
     if (signUpForm) {
-      signUpForm.addEventListener("submit", async (ev) => {
+      signUpForm.addEventListener('submit', (ev) => {
         ev.preventDefault();
         const name = document.getElementById('suName').value.trim();
         const house = document.getElementById('suHouse').value.trim();
@@ -150,37 +112,49 @@
         const email = document.getElementById('suEmail').value.trim();
         const pass = document.getElementById('suPassword').value;
 
-        try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-          const user = userCredential.user;
+        if (!name || !email || !pass) {
+          alert('Please complete all required fields.');
+          return;
+        }
 
-          const profile = {
-            name,
-            email,
-            house,
-            room,
-            phone,
-            isAdmin: false,
-            createdAt: new Date().toISOString()
-          };
-          await setDoc(doc(db, "users", user.uid), profile);
-          localStorage.setItem(userKey, JSON.stringify(profile));
+        const users = getStoredUsers();
+        if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+          alert('A user with that email already exists.');
+          return;
+        }
 
-          if (authModal) authModal.classList.remove('show');
-          alert("Account created successfully!");
-          if (window.location.pathname.endsWith('auth.html')) {
-            window.location.href = 'index.html';
-          }
-        } catch (err) {
-          alert("Sign up failed: " + err.message);
+        const profile = {
+          name,
+          email,
+          house,
+          room,
+          phone,
+          isAdmin: false,
+          password: pass,
+          createdAt: new Date().toISOString()
+        };
+
+        users.push(profile);
+        saveStoredUsers(users);
+        setCurrentUser(profile);
+
+        if (authModal) authModal.classList.remove('show');
+        updateUI(profile);
+        alert('Account created successfully!');
+        if (window.location.pathname.endsWith('auth.html')) {
+          window.location.href = 'index.html';
         }
       });
     }
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAuthForms);
+    document.addEventListener('DOMContentLoaded', () => {
+      initAuthForms();
+      loadCurrentUser();
+    });
   } else {
     initAuthForms();
+    loadCurrentUser();
   }
 })();
